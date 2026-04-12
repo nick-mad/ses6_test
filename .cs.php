@@ -7,8 +7,8 @@ return (new Config())
     ->setRiskyAllowed(true)
     ->setRules(
         [
-            '@PSR1' => true,
-            '@PSR2' => true,
+            '@PSR12' => true,
+            '@PSR12:risky' => true,
             // custom rules
             'psr_autoloading' => true,
             'align_multiline_comment' => ['comment_type' => 'phpdocs_only'], // psr-5
@@ -19,7 +19,7 @@ return (new Config())
             'cast_spaces' => ['space' => 'none'],
             'concat_space' => ['spacing' => 'one'],
             'compact_nullable_type_declaration' => true,
-            'declare_equal_normalize' => ['space' => 'single'],
+            'declare_equal_normalize' => ['space' => 'none'],
             'general_phpdoc_annotation_remove' => [
                 'annotations' => [
                     'author',

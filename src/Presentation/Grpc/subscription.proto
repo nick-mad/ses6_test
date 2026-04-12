@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package app.subscription.v1;
+
+option php_metadata_namespace = "App\\Presentation\\Grpc\\Metadata";
+option php_namespace = "App\\Presentation\\Grpc\\Generated";
+
+service SubscriptionService {
+    rpc Subscribe (SubscribeRequest) returns (SubscribeResponse);
+    rpc ListSubscriptions (ListSubscriptionsRequest) returns (ListSubscriptionsResponse);
+}
+
+message SubscribeRequest {
+    string email = 1;
+    string repository_url = 2;
+}
+
+message SubscribeResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message ListSubscriptionsRequest {}
+
+message ListSubscriptionsResponse {
+    repeated SubscriptionItem subscriptions = 1;
+}
+
+message SubscriptionItem {
+    int32 id = 1;
+    string email = 2;
+    string repository_url = 3;
+    string last_seen_tag = 4;
+}

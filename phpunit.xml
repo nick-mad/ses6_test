@@ -4,7 +4,10 @@
          cacheDirectory=".phpunit.cache" backupStaticProperties="false">
     <coverage/>
     <testsuites>
-        <testsuite name="Tests">
+        <testsuite name="Unit">
+            <directory suffix="Test.php">tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
             <directory suffix="Test.php">tests/TestCase</directory>
         </testsuite>
     </testsuites>

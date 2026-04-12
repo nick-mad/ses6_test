@@ -1,0 +1,42 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      APP_ENV: prod
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: release_notification
+      DB_USER: postgres
+      DB_PASS: postgres
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      MAIL_DRIVER: ${MAIL_DRIVER:-log}
+      MAIL_DSN: ${MAIL_DSN:-null://default}
+      MAIL_FROM_EMAIL: ${MAIL_FROM_EMAIL:-noreply@example.com}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Release Notifier}
+      MAIL_BASE_URL: ${MAIL_BASE_URL:-http://localhost:8080}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./logs:/var/www/logs
+
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: release_notification
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:

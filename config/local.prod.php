@@ -3,7 +3,7 @@
 // Production environment
 
 return function (array $settings): array {
-    $settings['db']['database'] = 'slim_skeleton';
+    $settings['error']['display_error_details'] = false;
 
     return $settings;
 };

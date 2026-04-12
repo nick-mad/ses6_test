@@ -2,7 +2,9 @@
 
 namespace App\Test\TestCase\Action\Subscription;
 
-use App\Action\Subscription\SubscribeAction;
+use App\Domain\Subscription\Client\GithubClientInterface;
+use App\Domain\Subscription\Exception\RepositoryNotFoundException;
+use App\Presentation\Action\Subscription\SubscribeAction;
 use App\Test\Traits\AppTestTrait;
 use Fig\Http\Message\StatusCodeInterface;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -16,9 +18,15 @@ class SubscribeActionTest extends TestCase
     public function testSubscribeSuccess(): void
     {
         $request = $this->createFormRequest('POST', '/api/subscribe', [
-            'email' => 'test@example.com',
-            'repo' => 'owner/repo'
+            'email' => 'new@example.com',
+            'repo' => 'owner/repo',
         ]);
+
+        // Mock the github client in the container
+        $githubClient = $this->createMock(GithubClientInterface::class);
+        $githubClient->expects($this->once())->method('validateRepository');
+        $this->container->set(GithubClientInterface::class, $githubClient);
+
         $response = $this->app->handle($request);
 
         $this->assertSame(StatusCodeInterface::STATUS_OK, $response->getStatusCode());
@@ -28,7 +36,7 @@ class SubscribeActionTest extends TestCase
     {
         $request = $this->createFormRequest('POST', '/api/subscribe', [
             'email' => 'invalid-email',
-            'repo' => 'owner/repo'
+            'repo' => 'owner/repo',
         ]);
         $response = $this->app->handle($request);
 
@@ -39,7 +47,7 @@ class SubscribeActionTest extends TestCase
     {
         $request = $this->createFormRequest('POST', '/api/subscribe', [
             'email' => 'test@example.com',
-            'repo' => 'invalid-repo-format'
+            'repo' => 'invalid-repo-format',
         ]);
         $response = $this->app->handle($request);
 
@@ -56,13 +64,24 @@ class SubscribeActionTest extends TestCase
 
     public function testSubscribeJsonRequest(): void
     {
+        $githubClient = $this->createMock(GithubClientInterface::class);
+        $githubClient->expects($this->once())->method('validateRepository');
+        $this->container->set(GithubClientInterface::class, $githubClient);
+
         $request = $this->createRequest('POST', '/api/subscribe')
             ->withHeader('Content-Type', 'application/json');
-        $request->getBody()->write((string)json_encode([
-            'email' => 'test@example.com',
-            'repo' => 'owner/repo'
-        ]));
-        
+        $request->getBody()->write(
+            (string)json_encode([
+                'email' => 'json@example.com',
+                'repo' => 'owner/repo',
+            ])
+        );
+        // BodyParsingMiddleware requires the body to be at the beginning or manually set parsed body
+        $request = $request->withParsedBody([
+            'email' => 'json@example.com',
+            'repo' => 'owner/repo',
+        ]);
+
         $response = $this->app->handle($request);
 
         $this->assertSame(StatusCodeInterface::STATUS_OK, $response->getStatusCode());
@@ -70,9 +89,13 @@ class SubscribeActionTest extends TestCase
 
     public function testSubscribeRepoNotFound(): void
     {
+        $githubClient = $this->createMock(GithubClientInterface::class);
+        $githubClient->method('validateRepository')->willThrowException(new RepositoryNotFoundException());
+        $this->container->set(GithubClientInterface::class, $githubClient);
+
         $request = $this->createFormRequest('POST', '/api/subscribe', [
             'email' => 'test@example.com',
-            'repo' => 'nonexistent/repo'
+            'repo' => 'nonexistent/repo',
         ]);
         $response = $this->app->handle($request);
 
@@ -81,10 +104,15 @@ class SubscribeActionTest extends TestCase
 
     public function testSubscribeAlreadyExists(): void
     {
+        // 'test@example.com' with 'odan/slim4-skeleton' already exists in seeds
         $request = $this->createFormRequest('POST', '/api/subscribe', [
-            'email' => 'already@subscribed.com',
-            'repo' => 'owner/repo'
+            'email' => 'test@example.com',
+            'repo' => 'odan/slim4-skeleton',
         ]);
+
+        $githubClient = $this->createMock(GithubClientInterface::class);
+        $this->container->set(GithubClientInterface::class, $githubClient);
+
         $response = $this->app->handle($request);
 
         $this->assertSame(StatusCodeInterface::STATUS_CONFLICT, $response->getStatusCode());

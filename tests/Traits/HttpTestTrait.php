@@ -23,8 +23,8 @@ trait HttpTestTrait
      * @param array $serverParams The server parameters
      *
      * @throws RuntimeException
-     *
      * @return ServerRequestInterface The request
+     *
      */
     protected function createRequest(
         string $method,
@@ -49,8 +49,11 @@ trait HttpTestTrait
      *
      * @return ServerRequestInterface The request
      */
-    protected function createFormRequest(string $method, string|UriInterface $uri, ?array $data = null): ServerRequestInterface
-    {
+    protected function createFormRequest(
+        string $method,
+        string|UriInterface $uri,
+        ?array $data = null
+    ): ServerRequestInterface {
         $request = $this->createRequest($method, $uri);
 
         if ($data !== null) {
@@ -67,8 +70,8 @@ trait HttpTestTrait
      * @param string $reasonPhrase Reason phrase to associate with status code
      *
      * @throws RuntimeException
-     *
      * @return ResponseInterface The response
+     *
      */
     protected function createResponse(int $code = 200, string $reasonPhrase = ''): ResponseInterface
     {

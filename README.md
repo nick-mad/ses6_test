@@ -1,53 +1,214 @@
-<h1 align="center">
-  <img src="https://user-images.githubusercontent.com/781074/67567104-9fe7d000-f729-11e9-8a2d-0c7286475aac.png">
-</h1>
+# GitHub Release Subscriber
 
-<h3 align="center">Slim 4 Skeleton</h3>
+Сервіс для підписки на нові релізи GitHub репозиторіїв, який дозволяє 
+підписатися на email-сповіщення про нові релізи обраного GitHub-репозиторію.
 
-<div align="center">
+#### Фреймворк
+В проекті був використаний фреймворк Slim 4. Він фактично є обвязкою між request, response, route. 
+Можна було самому зібрати схоже використовуючи тільки пакети,
+накшталт 
+- https://route.thephpleague.com/6.x/ ("надстройка" над тим самим nikic/FastRoute)
+- laminas/laminas-diactoros 
+- league/container
 
-  [![Latest Version on Packagist](https://img.shields.io/github/release/odan/slim4-skeleton.svg)](https://packagist.org/packages/odan/slim4-skeleton)
-  [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
-  [![Build Status](https://github.com/odan/slim4-skeleton/workflows/build/badge.svg)](https://github.com/odan/slim4-skeleton/actions)
-  [![Coverage Status](https://coveralls.io/repos/github/odan/slim4-skeleton/badge.svg)](https://coveralls.io/github/odan/slim4-skeleton)
-  [![Total Downloads](https://img.shields.io/packagist/dt/odan/slim4-skeleton.svg)](https://packagist.org/packages/odan/slim4-skeleton/stats)
+але умовами завдання було дозволено взяти Slim, його і взяв, так як є більше документації та готових рішень.
 
-This is a skeleton to quickly set up a new [Slim 4](https://www.slimframework.com/) application.
+#### В роботі були викоритсані такі пакети
+- php-di/php-di - контейнер для DI
+- robmorgan/phinx - для міграцій
+- symfony/console - для консольних команд 
+- symfony/mailer - для відправки email 
+- guzzlehttp/guzzle - http клієнт
+- monolog/monolog - для логування
+- PDO - для запитів в БД
 
-</div>
+#### БД
+Спочатку обрав MySql, потім подивився, що для деплоя на сервіси, такі як render, потрібно використовувати pgsql.
+Тому обрав pgsql,
 
-## Requirements
+Вирішив, що використання pdo для цього проекту достатньо. 
+Але якби обирав orm то взяв би doctrine/dbal, doctrine/orm і відповідно використовував міграції doctrine/migrations
 
-* PHP 8.2 - 8.5
+## Структура проекту
 
-## Installation
+Структура проекту побудована за принципами чиста архітектура (Clean Architecture) з чітким розділенням відповідальності між шарами.
 
-Read the **[documentation](https://odan.github.io/slim4-skeleton/installation.html)**
+```text
+.
+├── bin                     # Виконувані файли (CLI консоль)
+├── config                  # Налаштування додатку (routes, container, database)
+├── db                      # База даних (міграції та сіди)
+├── docs                    # Документація проекту
+├── logs                    # Логи роботи додатку
+├── public                  # Web root (front-controller index.php, статичні файли)
+├── src                     # Вихідний код (архітектура додатку)
+│   ├── Application         # Прикладний шар (Use Cases, DTO, інтерфейси сервісів)
+│   ├── Domain              # Доменний шар (Бізнес-логіка, сутності, інтерфейси репозиторіїв)
+│   ├── Infrastructure      # Шар інфраструктури (Реалізація інтерфейсів, робота з БД, зовнішні API)
+│   ├── Presentation        # Шар представлення (HTTP Action/Controllers, CLI команди)
+│   └── Shared              # Спільний код (Middleware, Renderer, допоміжні класи)
+├── templates               # HTML шаблони
+├── tests                   # Автоматизовані тести (Unit, TestCase)
+└── tmp                     # Тимчасові файли та кеш
+```
 
-## Features
+### Архітектура `src`
 
-This project is based on best practices and industry standards:
+Основна логіка додатка зосереджена в папці `src`, яка розділена на наступні шари та підпапки:
 
-* [Standard PHP package skeleton](https://github.com/php-pds/skeleton)
-* HTTP router (Slim)
-* HTTP message interfaces (PSR-7)
-* HTTP Server Request Handlers, Middleware (PSR-15)
-* Dependency injection container (PSR-11)
-* Autoloader (PSR-4)
-* Logger (PSR-3)
-* Code styles (PSR-12)
-* Single action controllers
-* Unit- and integration tests
-* Tested with [Github Actions](https://github.com/odan/slim4-skeleton/actions)
-* [PHPStan](https://github.com/phpstan/phpstan)
+- **Application** (Прикладний шар):
+    - `Subscription`: Логіка сценаріїв використання для підписок.
+        - `DTO`: Об'єкти передачі даних для вхідних та вихідних параметрів.
+        - `Service`: Сервіси прикладного рівня (Use Cases), які координують виконання бізнес-задач.
+- **Domain** (Доменний шар - ядро):
+    - `Subscription`: Бізнес-логіка підписок.
+        - `ValueObject`: Об'єкти-значення (Value Objects).
+        - `Repository`: Інтерфейси репозиторіїв для збереження даних.
+        - `Service`: Доменні сервіси для складної бізнес-логіки.
+        - `Exception`: Специфічні доменні винятки.
+        - `Client` / `Provider`: Інтерфейси для зовнішніх систем (GitHub API).
+- **Infrastructure** (Шар інфраструктури):
+    - `Persistence`: Реалізація репозиторіїв (наприклад, `PdoSubscriptionRepository`).
+    - `Service`: Реалізація сповіщень (SMTP, логування).
+    - `Client`: Реалізація HTTP-клієнтів для взаємодії з GitHub API (Guzzle).
+    - `Provider`: Реалізація провайдерів даних.
+- **Presentation** (Шар представлення):
+    - `Action`: HTTP контролери (Actions) для обробки веб-запитів.
+    - `Console`: Команди для CLI інтерфейсу (Symfony Console).
+    - `Grpc`: (Опціонально) Опис сервісів gRPC та згенеровані класи.
+- **Shared** (Спільні компоненти):
+    - `Middleware`: Проміжне ПЗ, зокрема для обробки винятків та валідації.
+    - `Renderer`: Класи для форматування відповідей (JSON, HTML через шаблони).
 
-## Support
+####  
 
-* [Issues](https://github.com/odan/slim4-skeleton/issues)
-* [Blog](https://odan.github.io/)  
-* [Donate](https://odan.github.io/donate.html) for this project.
-* [Slim 4 eBooks](https://odan.github.io/donate.html)
+Для обробки запитів було обрано invocable action — один ендпоінт один клас
+для виладіції використовується request DTO та ValueObject.
+Додаткову валідацію request не проводив а бізнес валідація відбувається в сервісах.
 
-## License
+Потім щоб request не "протік" в сервіси ми формуємо SubscribeParams який і передаємо в сервісний слой  
+В нашому випадку в сервісі при при підписці потрібно перевірити чи репозиторій існує та отримати його поточний тег.
+Для роботи з БД використовуємо репозиторій. Я писав раніше що обрав спочатку mySql, 
+а потім просто замінивши налаштування та Dockerfile мігрував на pgsql.
 
-The MIT License (MIT). Please see [License File](LICENSE) for more information.
+Для перевірки оновлень репозиторій використовуємо cron який запускає консольну команду subscription:scan
+
+оскільки процес перевірки може обірватись і при наступній перевірці знову першими будуть перевірятися тіж самі репозиторії, 
+було додане сортування, яке забезпечує перевірку спочатку репозиторіїв, які ще ні разу не перевірялися (last_seen_tag = null),
+а потім сортуються за last_seen_tag старіші — перші
+
+Cтосовно лімітів Github, то є можливість указати токен і якщо він вказаний то буде використаний
+
+Також розроблена HTML сторінка підписка яка досить проста й використовується для оформлення підписки.
+
+### Автентифікація (API Key)
+
+У проекті реалізовано механізм захисту API ендпоїнтів за допомогою API Key. 
+Це виконано через `ApiKeyMiddleware`, який перевіряє наявність та коректність токена у заголовку `X-API-KEY`.
+
+Для демонстрації автентифікація за замовчуванням **вимкнена**. 
+Закоментував її щоб було простіше розгорнути і перевірити роботу проекту.
+Щоб її активувати:
+1. Відкрийте файл `config/routes.php`.
+2. Знайдіть групу маршрутів `/api` та розкоментуйте `->add(ApiKeyMiddleware::class)`.
+
+Після активації всі запити до `/api/*` вимагатимуть заголовок:
+`X-API-KEY: demo-api-key` (значення за замовчуванням, яке можна змінити в DI контейнері).
+
+### GitHub Actions (CI)
+
+Для забезпечення стабільності та якості коду в проекті налаштована автоматична перевірка (CI) через GitHub Actions.
+Workflow запускається при кожному `push` в репозиторій або при створенні `pull request`.
+
+Основні етапи перевірки:
+- **Перевірка консистентності Composer**: Валідація `composer.json` та `composer.lock`.
+- **Linter (PHP Coding Standards Fixer)**: Перевірка відповідності коду встановленим стандартам форматування.
+- **PHP CodeSniffer**: Додаткова перевірка стилю коду за допомогою `phpcs`.
+- **Статичний аналіз (PHPStan)**: Пошук потенційних помилок та перевірка типізації без запуску коду.
+- **Автоматизовані тести (PHPUnit)**: Запуск тестів з використанням реальної бази даних PostgreSQL (яка піднімається в сервісах GitHub Actions) та генерація звіту про покриття коду. В проекті також реалізована автоматична валідація відповідей API на відповідність специфікації OpenAPI за допомогою `league/openapi-psr7-validator`.
+
+Результати перевірок можна побачити в розділі "Actions" репозиторію на GitHub.
+
+### gRPC як альтернатива
+
+Реалізація gRPC в PHP є дещо складнішою за REST через потребу в HTTP/2 та специфіку виконання PHP (зазвичай stateless).
+
+#### Складність реалізації:
+1. **Інфраструктура**: PHP-FPM не підтримує gRPC "з коробки". Потрібен серверний додаток на кшталт **RoadRunner** або **Swoole**, які тримають додаток у пам'яті.
+2. **Генерація коду**: Потрібно описувати інтерфейси у `.proto` файлах та генерувати PHP-класи за допомогою `protoc`.
+3. **Клієнтська частина**: Вимагає розширення `grpc` для PHP.
+
+#### Переваги в даній архітектурі:
+Завдяки Clean Architecture, додавання gRPC — це лише створення нового шару в `Presentation` (`src/Presentation/Grpc`). Вся бізнес-логіка в `Application` та `Domain` залишиться незмінною. gRPC-сервіс просто викликатиме ті самі `UseCase` (сервіси), що й REST контролери.
+
+Приклад визначення сервісу можна знайти в `src/Presentation/Grpc/subscription.proto`.
+
+### Відправка Email
+
+Сервіс використовує **Symfony Mailer** для відправки електронних листів (підтвердження підписки та сповіщення про нові релізи).
+
+#### Способи відправки (Drivers):
+В проекті реалізовано два режими роботи, які контролюються параметром `MAIL_DRIVER`:
+1.  **log** (за замовчуванням): Листи не відправляються реально, а лише записуються в лог-файл (`logs/app.log`). Це зручно для розробки та тестування.
+2.  **smtp**: Реальна відправка через SMTP-сервер.
+
+#### Налаштування через `.env`:
+Щоб налаштувати відправку через SMTP, додайте або змініть наступні змінні у вашому файлі `.env`:
+
+```bash
+# Драйвер відправки: smtp або log
+MAIL_DRIVER=smtp
+
+# DSN для підключення до SMTP серверу
+# Формат: smtp://USER:PASSWORD@HOST:PORT
+MAIL_DSN=smtp://user:pass@smtp.example.com:587
+
+# Email та ім'я відправника
+MAIL_FROM_EMAIL=noreply@yourdomain.com
+MAIL_FROM_NAME="GitHub Release Notifier"
+
+# Базовий URL додатку для формування посилань на підтвердження в листах
+MAIL_BASE_URL=http://localhost:8080
+```
+
+### Redis-кешування відповідей від GitHub API з TTL 10 хвилин
+Таке кешування передбачає що запуск сканування на оновлення репозиторыъв повинно відбуватися частіше чим 10 хв.
+Я не бачу в цьому необхідності, бо цього ж ефекту можна досягти, просто запускаючи крон раз на 10хв.
+Аще враховуючи ліміти github API, (rate limit: 60 req/год без токена, 5000 з токеном) 
+і гіпотетично великою кількістю репозиторіїв які потрібно перевірити (більше 100000), це потрібно мати декілька токенів,
+щоб їх змінювати під час сканування, або використовувати якісь інші механізми які дозволять обійти цей ліміт накшталт проксі
+
+## Швидкий старт через Docker
+
+1. Скопіюйте `.env.example` у `.env` (необов'язково, якщо використовуєте значення за замовчуванням):
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Запустіть контейнери:
+   ```bash
+   docker compose up -d --build
+   ```
+
+3. Додаток буде доступний за адресою: [http://localhost:8080](http://localhost:8080)
+
+## Команди для сканування релізів
+
+Для запуску сканування релізів всередині контейнера:
+```bash
+docker compose exec app php bin/console.php subscription:scan
+```
+
+## Розробка без Docker
+
+1. Встановіть залежності:
+   ```bash
+   composer install
+   ```
+
+2. Налаштуйте базу даних у `config/env.php`.
+
+3. Запустіть міграції:
+   ```bash
+   composer db:init
+   ```

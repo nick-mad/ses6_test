@@ -1,0 +1,190 @@
+openapi: 3.0.0
+info:
+  title: GitHub Release Notification API
+  description: GitHub Release Notification API that allows users to subscribe to email notifications about new releases of a chosen GitHub repository.
+  version: 1.0.0
+servers:
+  - url: /api
+paths:
+  /subscribe:
+    post:
+      tags:
+        - subscription
+      summary: Subscribe to release notifications
+      description: Subscribe an email to receive notifications about new releases of a GitHub repository. The repository is validated via GitHub API.
+      operationId: subscribe
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscribeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubscribeRequest'
+        required: true
+      responses:
+        '200':
+          description: Subscription successful. Confirmation email sent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid input (e.g., invalid repo format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Repository not found on GitHub
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email already subscribed to this repository
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /confirm/{token}:
+    get:
+      tags:
+        - subscription
+      summary: Confirm email subscription
+      description: Confirms a subscription using the token sent in the confirmation email.
+      operationId: confirmSubscription
+      parameters:
+        - name: token
+          in: path
+          description: Confirmation token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subscription confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Token not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /unsubscribe/{token}:
+    get:
+      tags:
+        - subscription
+      summary: Unsubscribe from release notifications
+      description: Unsubscribes an email from release notifications using the token sent in emails.
+      operationId: unsubscribe
+      parameters:
+        - name: token
+          in: path
+          description: Unsubscribe token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Unsubscribed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Token not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /subscriptions:
+    get:
+      tags:
+        - subscription
+      summary: Get subscriptions for an email
+      description: Returns all active subscriptions for the given email address.
+      operationId: getSubscriptions
+      parameters:
+        - name: email
+          in: query
+          description: Email address to look up subscriptions for
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation - list of subscriptions returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Subscription'
+        '400':
+          description: Invalid email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    SubscribeRequest:
+      type: object
+      required:
+        - email
+        - repo
+      properties:
+        email:
+          type: string
+        repo:
+          type: string
+    Subscription:
+      type: object
+      required:
+        - email
+        - repo
+      properties:
+        email:
+          type: string
+          description: Email address
+        repo:
+          type: string
+          description: GitHub repository in owner/repo format
+        confirmed:
+          type: boolean
+          description: Whether the subscription is confirmed
+        last_seen_tag:
+          type: string
+          nullable: true
+          description: Last seen release tag for this repository
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string

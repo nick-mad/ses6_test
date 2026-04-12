@@ -2,7 +2,7 @@
 
 namespace App\Test\TestCase\Action\Home;
 
-use App\Action\Home\HomeAction;
+use App\Presentation\Action\Home\HomeAction;
 use App\Test\Traits\AppTestTrait;
 use Fig\Http\Message\StatusCodeInterface;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -19,7 +19,7 @@ class HomeActionTest extends TestCase
         $response = $this->app->handle($request);
 
         $this->assertSame(StatusCodeInterface::STATUS_OK, $response->getStatusCode());
-        $this->assertResponseContains('Welcome!', $response);
+        $this->assertResponseContains('Підписка на релізи GitHub', $response);
     }
 
     public function testPageNotFound(): void

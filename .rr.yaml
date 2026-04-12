@@ -1,0 +1,25 @@
+version: "3"
+
+rpc:
+  listen: tcp://127.0.0.1:6001
+
+http:
+  address: :8080
+  middleware: ["static", "gzip"]
+  static:
+    dir: "public"
+    forbid: [".php", ".htaccess"]
+  pool:
+    num_workers: 2
+    max_jobs: 0
+    allocate_timeout: 60s
+    destroy_timeout: 60s
+
+server:
+  command: "php worker.php"
+  user: ""
+  group: ""
+
+logs:
+  mode: development
+  level: debug

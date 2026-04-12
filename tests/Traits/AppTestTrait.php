@@ -9,8 +9,10 @@ trait AppTestTrait
 {
     use ArrayTestTrait;
     use ContainerTestTrait;
+    use DatabaseTestTrait;
     use HttpTestTrait;
     use HttpJsonTestTrait;
+    use OpenApiTestTrait;
 
     protected App $app;
 
@@ -20,6 +22,7 @@ trait AppTestTrait
     protected function setUp(): void
     {
         $this->setUpApp();
+        $this->setUpDatabase();
     }
 
     protected function setUpApp(): void

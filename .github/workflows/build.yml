@@ -12,20 +12,25 @@ jobs:
     strategy:
       matrix:
         operating-system: [ ubuntu-latest ]
-        php-versions: [ '8.2', '8.3', '8.4', '8.5' ]
+        php-versions: [ '8.4' ]
     name: PHP ${{ matrix.php-versions }} Test on ${{ matrix.operating-system }}
     env:
       APP_ENV: github
 
     services:
-      mysql:
-        image: mysql:8.0.23
+      postgres:
+        image: postgres:18
         env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: test
-          MYSQL_ALLOW_EMPTY_PASSWORD: true
+          POSTGRES_DB: release_notification
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
         ports:
-          - 33306:3306
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
@@ -35,7 +40,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-versions }}
-          extensions: mbstring, pdo, pdo_mysql, intl, zip
+          extensions: mbstring, pdo, pdo_pgsql, intl, zip
 
       - name: Check PHP version
         run: php -v
@@ -46,17 +51,8 @@ jobs:
       - name: Check PHP extensions
         run: php -m
 
-      - name: Check MySQL version
-        run: mysql -V
-
-      - name: Start MySQL
-        run: sudo systemctl start mysql
-
-      - name: Check MySQL variables
-        run: mysql -uroot -proot -e "SHOW VARIABLES LIKE 'version%';"
-
-      - name: Create database
-        run: mysql -uroot -proot -e 'CREATE DATABASE IF NOT EXISTS slim_skeleton_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
+      - name: Check PostgreSQL version
+        run: psql --version
 
       - name: Validate composer.json and composer.lock
         run: composer validate
@@ -72,10 +68,6 @@ jobs:
 
       - name: Run PHPStan
         run: composer stan
-
-      - name: Run tests
-        if: ${{ matrix.php-versions != '8.4' }}
-        run: composer test
 
       - name: Run tests with coverage
         if: ${{ matrix.php-versions == '8.4' }}
