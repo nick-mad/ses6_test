@@ -60,15 +60,17 @@
     const message = document.getElementById('message');
 
     function showMessage(text, ok = true) {
-      message.textContent = text;
+      message.innerHTML = text;
       message.className = 'msg ' + (ok ? 'ok' : 'err');
     }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const email = form.email.value.trim();
+      const repo = form.repo.value.trim();
       const payload = {
-        email: form.email.value.trim(),
-        repo: form.repo.value.trim(),
+        email: email,
+        repo: repo,
       };
       try {
         const res = await fetch('/api/subscribe', {
@@ -81,7 +83,27 @@
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
-          showMessage('Перевірте вашу пошту: надіслано лист із підтвердженням.');
+          let msg = 'Перевірте вашу пошту: надіслано лист із підтвердженням.';
+          
+          try {
+            const tokenRes = await fetch('/api/subscription/token', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify({ email, repo }),
+            });
+            const tokenData = await tokenRes.json();
+            if (tokenData.success && tokenData.token) {
+              const confirmUrl = `${window.location.origin}/api/confirm/${tokenData.token}`;
+              msg += `<br><br>Або скористайтеся цим посиланням для підтвердження:<br><a href="${confirmUrl}" class="underline text-indigo-600 font-bold">${confirmUrl}</a>`;
+            }
+          } catch (e) {
+            console.error('Failed to fetch token', e);
+          }
+
+          showMessage(msg);
           form.reset();
         } else {
           let msg = 'Помилка при підписці';

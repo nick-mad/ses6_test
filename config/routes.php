@@ -12,6 +12,7 @@ return function (App $app) {
 
     $app->group('/api', function (Slim\Routing\RouteCollectorProxy $group) {
         $group->post('/subscribe', Subscription\SubscribeAction::class);
+        $group->post('/subscription/token', Subscription\GetTokenAction::class);
         $group->get('/confirm/{token}', Subscription\ConfirmSubscriptionAction::class);
         $group->get('/unsubscribe/{token}', Subscription\UnsubscribeAction::class);
         $group->get('/subscriptions', Subscription\ListSubscriptionsAction::class);

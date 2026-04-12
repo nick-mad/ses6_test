@@ -103,4 +103,16 @@ final readonly class PdoSubscriptionRepository implements SubscriptionRepository
         $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
         return $rows;
     }
+
+    public function findTokenByEmailAndRepo(string $email, string $repo): ?string
+    {
+        $sql = 'SELECT token FROM subscriptions
+                WHERE email = :email AND repo = :repo AND unsubscribed_at IS NULL
+                ORDER BY id DESC LIMIT 1';
+
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute(['email' => $email, 'repo' => $repo]);
+        $token = $statement->fetchColumn();
+        return $token ?: null;
+    }
 }

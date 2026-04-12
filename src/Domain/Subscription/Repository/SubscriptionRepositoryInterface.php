@@ -29,4 +29,6 @@ interface SubscriptionRepositoryInterface
 
     /** @return array<int, array<string, mixed>> */
     public function findAllActive(): array;
+
+    public function findTokenByEmailAndRepo(string $email, string $repo): ?string;
 }
