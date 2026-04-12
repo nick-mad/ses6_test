@@ -113,6 +113,6 @@ final readonly class PdoSubscriptionRepository implements SubscriptionRepository
         $statement = $this->pdo->prepare($sql);
         $statement->execute(['email' => $email, 'repo' => $repo]);
         $token = $statement->fetchColumn();
-        return $token ?: null;
+        return $token ? (string)$token : null;
     }
 }
