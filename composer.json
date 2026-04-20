@@ -1,13 +1,14 @@
 {
-    "name": "odan/slim4-skeleton",
-    "description": "A Slim 4 skeleton",
+    "name": "nick-mad/ses6",
+    "description": "Release Notification API based",
     "license": "MIT",
     "type": "project",
     "keywords": [
         "slim-framework",
         "skeleton",
         "slim",
-        "slim4"
+        "slim4",
+        "odan/slim4-skeleton"
     ],
     "require": {
         "php": "~8.4.0 || ~8.5.0",

@@ -36,12 +36,12 @@ fi
 touch /var/www/logs/cron.log
 chmod 0666 /var/www/logs/cron.log
 
-env | grep -v ' ' | sed 's/^\([^=]*\)=\(.*\)$/export \1="\2"/' > /var/www/.env.sh
-chown www-data:www-data /var/www/.env.sh
-echo "* * * * * root . /var/www/.env.sh; cd /var/www && /usr/local/bin/php /var/www/bin/console.php subscription:scan >> /var/www/logs/cron.log 2>&1" > /etc/cron.d/subscription-cron
-chmod 0644 /etc/cron.d/subscription-cron
-
+#disable cron
+#env | grep -v ' ' | sed 's/^\([^=]*\)=\(.*\)$/export \1="\2"/' > /var/www/.env.sh
+#chown www-data:www-data /var/www/.env.sh
+#echo "* * * * * root . /var/www/.env.sh; cd /var/www && /usr/local/bin/php /var/www/bin/console.php subscription:scan >> /var/www/logs/cron.log 2>&1" > /etc/cron.d/subscription-cron
+#chmod 0644 /etc/cron.d/subscription-cron
 # Start cron daemon
-/usr/sbin/cron
+#/usr/sbin/cron
 
 exec "$@"
